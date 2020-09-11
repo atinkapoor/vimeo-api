@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Vimeo Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<script>
+  var server_base_url = "http://localhost:8000";
+</script>  
+</head>
+<body>
+
+<div class="jumbotron text-center">
+  <h1>Vimeo Example</h1>
+</div>
+  
+<div class="container" style="padding-top:50px;text-align: center;" id="loading">
+  <img src="assets/images/loader.gif" width="64px;" height="64px;"/>
+</div>
+
+<!-- Users List -->
+<div class="container" style="padding-top:50px;" id="users">
+  <h2>Users List</h2>
+  <div style="float: right;margin-bottom: 10px;">
+    <button type="button" id="create_new_user" class="btn btn-primary" data-toggle="modal" data-target="#myModalCreateUser" disabled>Create New User</button>
+  </div>
+  <p>Below are the existing users:</p>            
+  <table class="table table-striped" id="userTable">
+    <thead>      
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+
+<!-- Videos List -->
+<div class="container" style="padding-top:50px;" id="videos">
+  <h2>Videos List</h2>
+  <div style="float: right;margin-bottom: 10px;">
+    <button type="button" id="create_new_video" class="btn btn-primary" data-toggle="modal" data-target="#myModalCreateVideo" disabled>Create New Video</button>
+  </div>
+  <p>Below are the existing videos:</p>            
+  <table class="table table-striped" id="videoTable">
+    <thead>      
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+
+<!-- Playlist / Showcase -->
+<div class="container" style="padding-top:50px;" id="showcase">
+  <h2>Playlist / Showcase</h2>
+  <div style="float: right;margin-bottom: 10px;">
+    <button type="button" id="create_new_showcase" class="btn btn-primary" data-toggle="modal" data-target="#myModalCreateShowcase">Create New Playlist / Showcase</button>
+  </div>
+  <p>Below are the existing Playlist / Showcase:</p>            
+  <table class="table table-striped" id="showcaseTable">
+    <thead>      
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- Modal New Playlist / Showcase -->
+<div id="myModalCreateShowcase" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <form name="create_showcase" onsubmit="return createShowcase();">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Create Playlist / Showcase</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="usr">Name:</label>
+            <input type="text" class="form-control" id="showcase_name" value="" required>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-success" id="createShowcaseSubmit">Submit</button>
+          </div>                                 
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Comments -->
+<div id="comments" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Video Comments</h4>
+        </div>
+        <div class="modal-body">
+          <table class="table table-striped" id="commentsTable">
+            <thead>      
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal New Comments -->
+<div id="myModalCreateComment" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <form name="create_comment">
+      <input type="hidden" id="comment_video_id">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Create Comment</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="usr">Comment:</label>
+            <input type="text" class="form-control" id="comment_text" value="" required>
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-success" id="createCommentSubmit" onClick="javascript:createVideoComment();">Submit</button>
+          </div>                                 
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<div id="dialog" title="Please Note!">  
+</div>
+
+<script>
+  $(document).ready(function(){
+    $('#loading').hide();
+    loadUsers();      
+    loadVideos();
+    loadShowcase();
+  });    
+
+  function loadUsers() {
+    $('#loading').show();
+    var url = server_base_url+"/user";
+    //console.log("url to node",url);
+    $.ajax({
+        type:'GET',
+        url: url,
+        dataType: 'JSON',
+        success:function(data){
+            //console.log(data);      
+            var usersList = data;
+            //delete existing ones
+            $("#userTable tr").remove(); 
+            var $trhead = $('<tr>').append('<th width="30%">Name</th><th width="50%">Link</th></tr>').appendTo('#userTable');
+            var $tr = $('<tr>').append(
+                $('<td>').text(usersList.name),
+                $('<td>').text(usersList.link),
+            ).appendTo('#userTable');
+            //console.log($tr.wrap('<p>').html());
+            $('#loading').hide();
+            $("#users").show();
+        }    
+    });        
+  }
+
+  function loadVideos() {
+    $('#loading').show();
+    var url = server_base_url+"/videos";
+    $.ajax({
+        type:'GET',
+        url: url,
+        dataType: 'JSON',
+        success:function(data){
+            //console.log(data);      
+            var videosList = data;
+            //delete existing ones
+            $("#videoTable tr").remove(); 
+            var $trhead = $('<tr>').append('<th width="20%">Name</th><th width="40%">Link</th><th width="20%">Play</th><th width="20%">Comments</th></tr>').appendTo('#videoTable');
+            $.each(videosList, function(i, item) {
+              var videoModel = '<div id="myModalVideo'+i+'" class="modal fade" role="dialog"><div class="modal-dialog">'+item.embed.html+'</div></div><a href="javascript:void(0);" data-toggle="modal" data-target="#myModalVideo'+i+'" class="list">Play</a>';
+              var commentModel = '<a href="javascript:addComment(\''+item.uri+'\');" data-toggle="modal" class="list">Add</a> | <a href="javascript:loadComments(\''+item.uri+'\');" data-toggle="modal" class="list">View</a>';
+              var $tr = $('<tr>').append(
+                  $('<td>').text(item.name),
+                  $('<td>').text(item.link),
+                  $('<td>').html(videoModel),
+                  $('<td>').html(commentModel),
+              ).appendTo('#videoTable');
+            });
+            $('#loading').hide();
+            $("#users").show();
+        }    
+    });        
+  }
+
+  function addComment(video_id) {
+    var videoid = video_id.replace("/videos/", "");
+    $("#comment_video_id").val(videoid);
+    $('#myModalCreateComment').modal('show');
+  }
+
+  function createVideoComment(){
+    var url = server_base_url+"/comment";
+    var video_id = $("#comment_video_id").val();    
+    var text = $("#comment_text").val();
+    $.ajax({
+        type:'POST',
+        url: url,
+        data: {
+            "video_id": video_id,
+            "text": text
+        },                  
+        success:function(data){
+            $('#myModalCreateComment').modal('hide');
+        }    
+    });        
+    return true;   
+  }  
+
+  function loadComments(video_id) {
+    $('#loading').show();
+    var videoid = video_id.replace("/videos/", "");
+    var url = server_base_url+"/comment?video_id="+videoid;
+    $.ajax({
+        type:'GET',
+        url: url,
+        dataType: 'JSON',
+        success:function(data){
+            var commentsList = data;
+            $("#commentsTable tr").remove(); 
+            var $trhead = $('<tr>').append('<th width="60%">Comment</th><th width="40%">Created On</th></tr>').appendTo('#commentsTable');
+            $.each(commentsList, function(i, item) {
+              var $tr = $('<tr>').append(
+                  $('<td>').text(item.text),
+                  $('<td>').text(item.created_on),
+              ).appendTo('#commentsTable');
+            });
+            $('#loading').hide();
+            $('#comments').modal('show');
+        }    
+    });        
+  }
+
+  function loadShowcase() {
+    $('#loading').show();
+    var url = server_base_url+"/showcase";
+    $.ajax({
+        type:'GET',
+        url: url,
+        dataType: 'JSON',
+        success:function(data){
+            //console.log(data);      
+            var showcasesList = data;
+            //delete existing ones
+            $("#showcaseTable tr").remove(); 
+            var $trhead = $('<tr>').append('<th width="30%">Name</th><th width="50%">Link</th><th width="20%">Videos</th></tr>').appendTo('#showcaseTable');
+            var showcaseModel = '';
+            $.each(showcasesList, function(i, item) {
+              if (null != item.embed.html)
+                showcaseModel = '<div id="myModalShowcase'+i+'" class="modal fade" role="dialog"><div class="modal-dialog">'+item.embed.html+'</div></div><a href="javascript:void(0);" data-toggle="modal" data-target="#myModalShowcase'+i+'" class="list">View</a>';
+              else
+                showcaseModel = '';
+              var $tr = $('<tr>').append(
+                  $('<td>').text(item.name),
+                  $('<td>').text(item.link),
+                  $('<td>').html(showcaseModel),
+              ).appendTo('#showcaseTable');
+            });
+            $('#loading').hide();
+            $("#users").show();
+        }    
+    });        
+  }
+
+  function createShowcase(){
+    var url = server_base_url+"/showcase";
+    var name = $("#showcase_name").val();    
+    $.ajax({
+        type:'POST',
+        url: url,
+        data: {
+            "name": name
+        },                  
+        success:function(data){
+            $('#myModalCreateShowcase').modal('hide');
+            $('#loading').show();
+            loadShowcase();      
+        }    
+    });        
+    return true;   
+  }  
+
+</script>
+</body>
+</html>
